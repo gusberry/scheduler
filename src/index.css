@@ -1,0 +1,58 @@
+.schedular-layout {
+  position: fixed;
+  margin: 50px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.flex-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-table-head {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+}
+
+.flex-table-head-item {
+  flex: 1;
+}
+
+.flex-table-body {
+  flex: 1;
+  display: flex;
+}
+
+.flex-table-body-titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-table-body-title {
+  flex: 1;
+}
+
+.flex-table-body-data {
+  flex: 24;
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-table-body-data-row {
+  position: relative;
+}
+.flex-table-body-data-row:nth-child(odd) {
+  background: grey;
+}
+
+.data-row-element {
+  position: relative;
+  background: red;
+  display: flex;
+  flex-direction: row;
+}
