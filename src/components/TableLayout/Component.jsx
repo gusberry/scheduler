@@ -17,21 +17,6 @@ class TableLayout extends Component {
     };
   }
 
-  onMouseMove = e => {
-    // const { nativeEvent, target } = e;
-    // const nonRoundedMinutesBasedOnPosition =
-    //   nativeEvent.offsetX / target.getBoundingClientRect().width * 60;
-    // console.log('----------------------------');
-    // console.log(nativeEvent);
-    // console.log(nativeEvent.screenX);
-    // console.log(nativeEvent.screenY);
-    // const minutes = Math.ceil(nonRoundedMinutesBasedOnPosition / 5) * 5;
-    // const dateBasedOnMousePosition = new Date(year, month, day, hour, minutes);
-    // console.log(dateBasedOnMousePosition);
-  };
-
-  throttledOnMouseMove = throttle(this.onMouseMove, 1000, { leading: false });
-
   render() {
     return (
       <div className="flex-table">

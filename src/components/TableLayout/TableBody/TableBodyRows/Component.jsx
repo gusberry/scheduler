@@ -1,38 +1,36 @@
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+import React, { Component } from "react";
+import PropTypes from "prop-types";
 
-import RowDataElement from './RowDataElement';
+import RowDataElement from "./RowDataElement";
+import { dateIsInRange } from "../../../../dateService";
 
-const dateIsInRange = (date, start, end) =>
-  new Date(start).toDateString() === new Date(date).toDateString() ||
-  new Date(date).toDateString() === new Date(end).toDateString() ||
-  (new Date(start) < new Date(date) && new Date(date) < new Date(end));
+const itemStub = [
+  {
+    start: new Date("2017-06-27T12:20:00+03:00"),
+    end: new Date("2017-06-28T01:20:00+03:00")
+  },
+  {
+    start: new Date("2017-06-01T12:20:00+03:00"),
+    end: new Date("2017-06-02T01:20:00+03:00")
+  },
+  {
+    start: new Date("2017-06-04T12:20:00+03:00"),
+    end: new Date("2017-06-07T01:20:00+03:00")
+  },
+  {
+    start: new Date("2017-06-22T12:20:00+03:00"),
+    end: new Date("2017-06-23T01:20:00+03:00")
+  },
+  {
+    start: new Date("2017-06-14T12:20:00+03:00"),
+    end: new Date("2017-06-15T01:20:00+03:00")
+  }
+];
 
 class TableLayout extends Component {
   state = {
-    items: [
-      {
-        Start: '2017-06-27T12:20:00+03:00',
-        End: '2017-06-28T01:20:00+03:00',
-      },
-      {
-        Start: '2017-06-01T12:20:00+03:00',
-        End: '2017-06-02T01:20:00+03:00',
-      },
-      {
-        Start: '2017-06-04T12:20:00+03:00',
-        End: '2017-06-07T01:20:00+03:00',
-      },
-      {
-        Start: '2017-06-22T12:20:00+03:00',
-        End: '2017-06-23T01:20:00+03:00',
-      },
-      {
-        Start: '2017-06-14T12:20:00+03:00',
-        End: '2017-06-15T01:20:00+03:00',
-      },
-    ],
-    axeMapping: {},
+    items: itemStub,
+    axeMapping: {}
   };
 
   componentWillMount() {
@@ -46,65 +44,102 @@ class TableLayout extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
+    const timeDiff = this.calculateTimeDiffWithCursorMove(nextProps);
+    const shouldUpdateItem =
+      this.state.isDragging && this.state.itemIndex !== undefined && timeDiff;
+
+    if (shouldUpdateItem) {
+      const elem = this.state.items[this.state.itemIndex];
+
+      const oldStart = elem.start;
+      const oldEnd = elem.end;
+
+      let nextStart =
+        !this.state.dragDatePart || this.state.dragDatePart === "start"
+          ? new Date(+oldStart + timeDiff)
+          : elem.start;
+
+      let nextEnd =
+        !this.state.dragDatePart || this.state.dragDatePart === "end"
+          ? new Date(+oldEnd + timeDiff)
+          : elem.end;
+
+      if (nextStart > nextEnd) {
+        const tempDate = nextStart;
+        nextStart = nextEnd;
+        nextEnd = tempDate;
+
+        this.state.dragDatePart =
+          this.state.dragDatePart === "end" ? "start" : "end";
+      }
+
+      this.setState({
+        items: [
+          ...this.state.items.slice(0, this.state.itemIndex),
+          {
+            ...elem,
+            start: nextStart,
+            end: nextEnd,
+            index: this.state.itemIndex
+          },
+          ...this.state.items.slice(this.state.itemIndex + 1)
+        ]
+      });
+    }
+  }
+
+  calculateTimeDiffWithCursorMove = nextProps => {
     const {
       position: { x, y },
       elementDimensions: { height, width },
-      yAxe,
+      yAxe
     } = nextProps;
 
-    const dateIndex = Math.ceil(y / height * yAxe.length) - 1;
-    const nextDate = yAxe[dateIndex];
+    const totalDaysCount = yAxe.length;
+    const dayIndex = Math.ceil(y / height * totalDaysCount) - 1;
+
+    const nextDate = yAxe[dayIndex];
     const nextTime = x / width * 24;
-    if (this.state.isDragging && this.state.elemIndex !== undefined) {
-      const elem = this.state.items[this.state.elemIndex];
-      const timeDiff = nextDate - this.date;
-      const hourDiff = Math.ceil((nextTime - this.time) * 60 * 60 * 1000);
-      const oldStart = new Date(elem.Start);
-      const oldEnd = new Date(elem.End);
-      this.setState({
-        items: [
-          ...this.state.items.slice(0, this.state.elemIndex),
-          {
-            ...elem,
-            Start: !this.state.time || this.state.time === 'start'
-              ? new Date(+oldStart + timeDiff + hourDiff).toString()
-              : elem.Start,
-            End: !this.state.time || this.state.time === 'end'
-              ? new Date(+oldEnd + timeDiff + hourDiff).toString()
-              : elem.End,
-            index: this.state.elemIndex,
-          },
-          ...this.state.items.slice(this.state.elemIndex + 1),
-        ],
-      });
-    }
-    this.date = nextDate;
-    this.time = nextTime;
-  }
+    const daysDiff = nextDate - this.previousDay;
+
+    const hoursDiff = Math.ceil(
+      (nextTime - this.previousTime) * 60 * 60 * 1000
+    );
+
+    this.previousDay = nextDate;
+    this.previousTime = nextTime;
+
+    return daysDiff + hoursDiff;
+  };
 
   updateAxeMapping = () => {
     const updatedAxesMapping = {};
+
     this.props.yAxe.forEach(
       axe =>
         (updatedAxesMapping[axe] = this.state.items
-          .map((item, i) => ({ ...item, index: i }))
-          .filter(item => dateIsInRange(axe, item.Start, item.End))),
+          .map((item, i) => ({
+            ...item,
+            start: new Date(item.start),
+            end: new Date(item.end),
+            index: i
+          }))
+          .filter(item => dateIsInRange(axe, item.start, item.end)))
     );
 
     this.setState({
-      axeMapping: updatedAxesMapping,
+      axeMapping: updatedAxesMapping
     });
   };
 
-  onStartDragging = (elemIndex, time) =>
-    this.setState({ isDragging: true, elemIndex, time });
+  onStartDragging = (itemIndex, dragDatePart) =>
+    this.setState({ isDragging: true, itemIndex, dragDatePart });
 
   onEndDragging = () =>
     this.setState({
       isDragging: false,
-      elemIndex: undefined,
-      initialDate: null,
-      time: null,
+      itemIndex: undefined,
+      dragDatePart: null
     });
 
   render() {
@@ -118,16 +153,16 @@ class TableLayout extends Component {
           <div key={axeDate} className="flex-table-body-data-row">
             {this.state.axeMapping[axeDate].map(item =>
               <RowDataElement
-                key={item}
-                start={item.Start}
-                current={axeDate}
-                end={item.End}
+                key={item.start}
+                start={item.start}
+                current={new Date(axeDate)}
+                end={item.end}
                 itemIndex={item.index}
                 onStartDragging={this.onStartDragging}
-              />,
+              />
             )}
-            {!this.state.axeMapping[axeDate].length && 'nothing'}
-          </div>,
+            {!this.state.axeMapping[axeDate].length && "nothing"}
+          </div>
         )}
       </div>
     );
@@ -135,7 +170,7 @@ class TableLayout extends Component {
 }
 
 TableLayout.propTypes = {
-  yAxe: PropTypes.array.isRequired,
+  yAxe: PropTypes.array.isRequired
 };
 
 export default TableLayout;

@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
-import TableLayout from '../TableLayout';
+import React, { Component } from "react";
+import TableLayout from "../TableLayout";
 
 const currentDate = new Date();
 const currentYear = currentDate.getFullYear();
-const currentMonth = currentDate.getMonth();
+const currentMonth = currentDate.getMonth() - 1;
 
 class Layout extends Component {
   render() {
